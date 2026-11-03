@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "brainstorm",
+  "version": "0.1.0",
+  "description": "Collaborative design dialogue for Codex: turn ideas into approaches, designs, and plans.",
+  "author": {
+    "name": "Anton Lebedev"
+  },
+  "repository": "https://github.com/lebedevdes/ccc-thingz",
+  "license": "MIT",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Brainstorm",
+        "shortDescription": "Turn ideas into designs through collaborative dialogue",
+        "category": "Productivity"
+      }
+    }
+  }
+}

@@ -4,7 +4,270 @@ Things to make [Claude Code](https://claude.ai/code) even better — hooks, skil
 
 This is an unapologetically opinionated set. Every skill here is something I actually use — some multiple times a day (brainstorm, plan, review), others less often but worth having in the toolbox. There are plenty of plugin collections out there, from random grab-bags to well-organized catalogs. This one is mine, and it reflects how I work. Even if you don't need my particular toolbox, it might give you ideas for building your own and making Claude Code do what you want it to do.
 
-## Install
+## Codex
+
+Codex adaptations live in `codex_plugins/`, with a separate marketplace at
+`.agents/plugins/marketplace.json`.
+
+| Plugin | Skills | Purpose |
+|---|---|---|
+| brainstorm | `$brainstorm` | Explore an idea, compare approaches, and validate a design |
+| planning | `$planning-make`, `$planning-exec` | Create implementation plans and execute them with Codex reviews and external OpenCode review |
+| workflow | `$learn`, `$clarify`, `$wrong`, `$md-copy`, `$txt-copy`, `$backlog` | Capture project knowledge, explain behavior, reconsider an approach, copy text, and manage deferred work |
+| thinking-tools | `$dialectic`, `$root-cause-investigator`, `$ask-opencode` | Test opposing hypotheses, investigate root causes, and get an OpenCode second opinion |
+
+From the repository root, register the local marketplace and install the plugin:
+
+```bash
+codex plugin marketplace add .
+codex plugin add brainstorm@ccc-thingz-codex
+codex plugin add planning@ccc-thingz-codex
+codex plugin add workflow@ccc-thingz-codex
+codex plugin add thinking-tools@ccc-thingz-codex
+```
+
+After these changes are pushed, install from the fork instead:
+
+```bash
+codex plugin marketplace add lebedevdes/ccc-thingz
+codex plugin add brainstorm@ccc-thingz-codex
+codex plugin add planning@ccc-thingz-codex
+codex plugin add workflow@ccc-thingz-codex
+codex plugin add thinking-tools@ccc-thingz-codex
+```
+
+Start a new Codex session and invoke `$brainstorm`, for example:
+`$brainstorm help me design caching for this API`. Natural-language brainstorm
+requests can also select the skill. See the
+[Codex usage guide](codex_plugins/brainstorm/skills/brainstorm/references/usage.md)
+for workflow details and examples.
+
+The Brainstorm adaptation for Codex is by Anton Lebedev, based on
+[Brainstorm by Umputun](https://github.com/umputun/cc-thingz).
+The original copyright notice and MIT license are preserved in the
+[plugin license](codex_plugins/brainstorm/LICENSE).
+
+The Codex version keeps the collaborative design workflow, uses the client's
+available question tools (or ordinary conversation), and can write a plan
+without requiring the Claude Code planning plugin. It loads custom rules from
+`.codex/brainstorm-rules.md` in the project first, then
+`${CODEX_HOME:-$HOME/.codex}/brainstorm-rules.md`; the first non-empty file wins.
+The bundled `skills/brainstorm/scripts/resolve-rules.sh` performs this lookup.
+See the [Codex custom rules reference](codex_plugins/brainstorm/skills/brainstorm/references/custom-rules.md).
+
+The package uses a root `plugin.json` manifest and bundles its helper and
+references inside the skill so they also work when the skill is installed alone.
+For a manual install, copy `codex_plugins/brainstorm/skills/brainstorm/` to
+`${CODEX_HOME:-$HOME/.codex}/skills/brainstorm/`, then start a new session. Choose
+either plugin installation or manual skill installation to avoid duplicates.
+
+Packaging follows the [official Codex plugin documentation](https://developers.openai.com/plugins/build/plugins).
+
+To check the Codex rules resolver, run
+`bash tests/test-codex-brainstorm-resolve-rules.sh`. It covers precedence, empty
+files, `CODEX_HOME`, explicit user directories, and paths containing spaces;
+the existing shell-test CI job runs it automatically.
+
+### Planning in Codex
+
+Start a new session after installing the planning plugin:
+
+```text
+$planning-make add caching to the API
+$planning-exec docs/plans/20261103-api-cache.md
+```
+
+The Codex skills preserve the original planning workflows, plan template,
+review checklists, and task/fixer/finalizer prompts. See the
+[Codex planning usage guide](codex_plugins/planning/references/usage.md).
+
+`planning-make` follows the original discovery, one-question-at-a-time context
+collection, approach comparison, and plan creation steps. It offers interactive
+annotations via `revdiff` or `$EDITOR`, the original internal plan-review checklist,
+external OpenCode plan review, interactive/autonomous implementation, or a plan-only
+finish. Selecting Implement or Done commits the selected plan as in the original,
+while honoring prior instructions about commits.
+
+`planning-exec` retains the original thirteen-step orchestration: resolve the plan,
+choose worktree isolation, track tasks, create the branch, initialize progress,
+execute one task at a time, run four review phases, finalize, report statistics,
+and move the completed plan. Codex adaptations cover tool APIs, permissions,
+concurrency, worktree handling, configuration, and available session metrics.
+Reviewers use authorized Codex subagents, or disclosed sequential checks when
+unavailable. OpenCode performs external review. Failed/skipped reviews and unresolved
+work remain visible; final reports reflect the actual outcome. Finalization never
+pushes.
+
+`subagent_model` in project/user `planning.json` selects the model for all native
+`planning-exec` subagents: tasks, review specialists, fixers, smells, finalizer,
+and stats. Its default is `""`, which leaves model selection to the client.
+A selected model is passed on each launch with a fresh context when required;
+unsupported selections are reported without silently substituting another model.
+Use a model ID available in your Codex client. OpenCode's reviewer model remains
+configured separately through `external_review_model`.
+
+External review defaults to **DeepSeek V4.1 Flash** through OpenCode:
+provider `deepseek`, model `deepseek-flash`, selector `deepseek/deepseek-flash`.
+Both plan review and code review use these same defaults. This model ID is
+confirmed by the [DeepSeek API documentation](https://api-docs.deepseek.com/quick_start/pricing/).
+OpenCode must be installed and authenticated for the selected provider.
+
+To change provider/model, create `.codex/planning.json` in the project or
+`${CODEX_HOME:-$HOME/.codex}/planning.json` for all projects:
+
+```json
+{
+  "external_review_provider": "deepseek",
+  "external_review_model": "deepseek-flash"
+}
+```
+
+Settings merge by key: defaults → user → project. Environment variables
+`PLANNING_EXTERNAL_REVIEW_PROVIDER` and `PLANNING_EXTERNAL_REVIEW_MODEL` override
+both files. Other settings include task retries, review iteration limits,
+timeout, plans directory, and finalization. The default OpenCode command is
+`["opencode", "--standalone"]`; OpenCode 2.2.5+ is required. The helper first
+resolves effective permissions with `debug agents`, then runs its
+plan agent, supplies review instructions and the full code diff as an attachment,
+and parses final JSON text events; empty output, errors, and timeouts do not count
+as clean reviews. OpenCode's review process uses reading/search tools, with edits
+and shell access disabled. Existing read/search restrictions are preserved;
+operations requiring approval are denied in this noninteractive process. The
+attachment includes separate staged/unstaged diffs and Git status so index-only
+changes remain visible. Credentials stay in OpenCode's configuration.
+
+Planning rules resolve from `.codex/planning-rules.md` first, then
+`${CODEX_HOME:-$HOME/.codex}/planning-rules.md`. Prompt and specialist overrides
+resolve from `.codex/exec-plan/`, then
+`${CODEX_HOME:-$HOME/.codex}/exec-plan/`, then bundled references. The
+`customize-file.sh` helper copies individual references without overwriting an
+existing override. For settings, defaults, and customization details, see the
+[Codex planning configuration](codex_plugins/planning/references/configuration.md).
+
+The plugin bundles VCS/commit/progress helpers, an OpenCode review runner, and
+explicit revdiff/editor launchers. It does not install Claude lifecycle hooks.
+For manual installation, keep the entire `codex_plugins/planning/` directory
+together and link its two skill directories into
+`${CODEX_HOME:-$HOME/.codex}/skills/` using symlinks. When locating shared helpers,
+resolve the real skill directory before walking to the plugin root. A copied
+skill directory alone does not include the planning plugin's shared resources.
+
+Run `bash tests/test-codex-planning.sh` to check configuration precedence,
+provider/model selection, OpenCode output/error/timeout handling, full branch
+snapshots, scoped plan commits, custom rules/overrides, and editor feedback.
+These tests use temporary fixtures and fake OpenCode responses, so CI requires
+no provider credentials or model calls. The regular shell-test CI job picks them
+up automatically.
+
+### Workflow in Codex
+
+The workflow plugin contains six skills:
+
+| Skill | Purpose |
+|---|---|
+| `$learn` | Save selected reusable discoveries to project guidance or an established knowledge store |
+| `$clarify` | Investigate unexpected behavior and explain it with code/configuration evidence |
+| `$wrong` | Reconsider a failed approach, compare alternatives, and continue in the agreed direction |
+| `$md-copy` | Format the selected answer as Markdown and copy it to the local clipboard |
+| `$txt-copy` | Copy selected text without reformatting |
+| `$backlog` | List, triage, add, fix, or drop deferred items in `docs/backlog/` |
+
+Start a new session after installing the plugin. Examples:
+
+```text
+$learn save the project conventions we discovered
+$clarify why does this setting have no effect?
+$wrong reconsider the caching approach
+$md-copy copy the last answer as Markdown
+$txt-copy copy the email above
+$backlog --all
+$backlog stale-cache-invalidation
+```
+
+`learn` follows existing memory-placement guidance and defaults to `AGENTS.md`
+for shared project knowledge. It accounts for active `AGENTS.override.md` files
+and keeps personal notes in an established local destination. It does not create
+a separate personal-memory convention or write global guidance automatically.
+The choice follows the [official Codex instruction-discovery rules](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+
+The workflow skills preserve the original Claude Code scenarios and steps, with
+Codex adaptations for questions, planning, and instruction-file discovery.
+Questions prefer a supported blocking input tool; asynchronous questions pause
+the workflow until answered, and ordinary conversation is the fallback.
+The skills honor decisions and authorization already given in the session.
+`clarify` can use `planning-make` when installed, or plan directly; switching to
+Plan mode is handled by the user when the client supports it.
+`backlog` keeps the original Git-only, one-file-per-item format, `worth` triage,
+slug/`--all` selection, deduplication, branch checks, and deletion with the fix.
+Reading the backlog does not authorize fixes, commits, or pushes.
+
+The copy skills use the original inline Bash mechanism: write a temporary text
+file, copy through macOS `pbcopy` or X11 `xclip`/`xsel`, and remove the temporary
+file. No Python clipboard helper is required at runtime.
+
+For a manual install, copy the desired directories from
+`codex_plugins/workflow/skills/` to `${CODEX_HOME:-$HOME/.codex}/skills/`.
+All six skills are self-contained.
+
+Run `bash tests/test-codex-workflow.sh` to exercise the inline copy commands with
+fake clipboard tools. The tests cover backend selection, literal Unicode and
+whitespace, and cleanup without changing the real clipboard.
+The existing shell-test CI job runs them automatically.
+
+### Thinking Tools in Codex
+
+The thinking-tools skills preserve the original Claude Code workflows, templates, and examples,
+with adaptations for Codex tools, invocation syntax, and OpenCode consultation:
+
+- `$dialectic`: launch supporting and opposing agents, synthesize their findings,
+  and verify against the implementation. Use available, authorized Codex subagent
+  tools; identify a sequential fallback when parallel delegation is unavailable.
+- `$root-cause-investigator`: the original five-level 5-Why investigation, with
+  issue/analysis templates and the original diagnostic reference materials.
+- `$ask-opencode`: the original consultation workflow adapted from `ask-codex`,
+  including explicit triggers, escalation after 4+ failed attempts, prompt
+  templates, adversarial review, and presentation of the external assessment.
+
+Examples in a new session after installation:
+
+```text
+$dialectic this implementation is thread-safe
+$root-cause-investigator investigate the intermittent connection timeout
+$ask-opencode get a second opinion on why this test still fails
+$ask-opencode review the changes on this branch
+```
+
+OpenCode consultation uses the same provider/model settings as planning:
+`${CODEX_HOME:-$HOME/.codex}/planning.json`, then project `.codex/planning.json`,
+with `PLANNING_EXTERNAL_REVIEW_PROVIDER` and `PLANNING_EXTERNAL_REVIEW_MODEL`
+environment overrides. Defaults are `deepseek` / `deepseek-flash`
+(DeepSeek V4.1 Flash), a 600-second timeout, and
+`["opencode", "--standalone"]`. The plugin bundles its own reader/transport,
+so **planning does not need to be installed** and the settings still work.
+See [consultation settings and result handling](codex_plugins/thinking-tools/references/opencode.md).
+
+The helper `scripts/ask-opencode.py` accepts a safely written prompt file,
+optional repeated `--attach` context files, and `--diff-base` for a full Git
+change snapshot. It extracts final assistant text, preserves the selected
+provider configuration, disables editing/shell access in the consultation agent,
+and reports missing tools, invalid output, errors, and timeouts explicitly.
+Structured reviews follow the [review contract](codex_plugins/thinking-tools/references/review-contract.md).
+Codex checks the external answer against the evidence and implements fixes only
+within the user's authorized task. Review presentation follows the original
+severity ordering and omits findings with confidence below 0.3; the helper retains
+the full structured result.
+
+For manual installation, `dialectic` can be copied as a single skill;
+`root-cause-investigator` includes its `references/` directory. Keep the whole
+`codex_plugins/thinking-tools/` folder together for `ask-opencode` and link its
+skill directory into `${CODEX_HOME:-$HOME/.codex}/skills/` so it can locate the
+shared helper/resources through its real path. The helpers require Python 3.10+.
+
+Run `bash tests/test-codex-thinking-tools.sh` to check shared configuration,
+advice/review output, provider/model selection, context/diff attachments, errors,
+and timeout handling using fake OpenCode responses. CI makes no model calls.
+
+## Claude Code Install
 
 Add the marketplace, then install the plugins you want:
 

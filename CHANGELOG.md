@@ -1,6 +1,6 @@
 # Changelog
 
-This repo ships independent Claude Code plugins. Version headings use values from `plugins/<name>/.claude-plugin/plugin.json`; they are not git tags.
+This repo ships independent Claude Code plugins and Codex adaptations. Claude Code version headings use values from `plugins/<name>/.claude-plugin/plugin.json`; Codex headings use `codex_plugins/<name>/plugin.json`. They are not git tags.
 
 Entries are sorted by plugin version date, newest first.
 
@@ -9,6 +9,44 @@ Entries are sorted by plugin version date, newest first.
 ### New Features
 
 - exec: new `subagent_model` setting picks the model for every exec subagent: task agents, the review fanout, fixers, smells, finalize and stats. Valid values are `opus`, `sonnet`, `haiku` and `fable`. This lets the orchestrator run on one model and the subagents on another, so an exec started from a Fable session no longer spends Fable quota on subagent work. Left empty, subagents get Claude Code's default subagent model, as before. The external review in step 9 runs through `run-external-review.sh` and is not affected
+
+## thinking-tools (Codex) v0.1.0 - 2026-11-03
+
+### New Features
+
+- Add `dialectic` and `root-cause-investigator` with Codex-compatible opposing analysis roles and evidence-based root-cause investigation.
+- Adapt `ask-codex` into `ask-opencode` for read-only advice and structured adversarial code review.
+- Reuse planning's provider/model settings and DeepSeek V4.1 Flash defaults through a bundled configuration reader and transport, without requiring planning to be installed.
+- Include context/diff snapshots, validated JSON review findings, explicit consultation failures/timeouts, and fixture-based CI checks.
+
+## workflow (Codex) v0.1.0 - 2026-11-03
+
+### New Features
+
+- Add Codex adaptations of `learn`, `clarify`, `wrong`, `md-copy`, `txt-copy`, and `backlog`.
+- Capture reusable project knowledge through existing placement conventions and `AGENTS.md`, accounting for active overrides and personal/local notes.
+- Adapt questions and planning handoffs to available Codex tools, preserving session decisions and prior authorization.
+- Preserve the Git backlog format/lifecycle and add a clipboard helper with literal UTF-8 copying, backend selection, and explicit failure reporting.
+- Add fixture-based clipboard checks to the shell-test CI job without touching the real clipboard.
+
+## planning (Codex) v0.1.0 - 2026-11-03
+
+### New Features
+
+- Add `planning-make` and `planning-exec` for implementation planning, sequential execution, worktree isolation, progress tracking, multi-phase Codex reviews, and optional finalization.
+- Support optional `subagent_model` selection for all native `planning-exec` subagents, preserving client defaults when unset and keeping OpenCode reviewer model settings independent.
+- Use OpenCode for external plan and code reviews, with independently configurable provider and model. Default to DeepSeek V4.1 Flash (`deepseek/deepseek-flash`).
+- Load settings from user/project `planning.json`, support environment overrides for reviewer provider/model, and load custom rules and prompt overrides from Codex paths.
+- Bundle explicit revdiff/editor annotation tools, VCS-aware scoped commit helpers, and a JSON review runner that distinguishes clean results, findings, skipped tools, failures, and timeouts.
+- Add fixture-based CI checks and verify a live external plan review with OpenCode 2.2.5 and DeepSeek V4.1 Flash.
+
+## brainstorm (Codex) v0.1.0 - 2026-11-03
+
+### New Features
+
+- Add the first Codex adaptation under `codex_plugins/brainstorm` and a separate `ccc-thingz-codex` marketplace at `.agents/plugins/marketplace.json`.
+- Preserve collaborative design phases with Codex-compatible questions, self-contained planning, and project/user rules under `.codex` or `CODEX_HOME`.
+- Bundle rules resolution and its reference inside the skill for both plugin and manual installation.
 
 ## planning v3.11.0 - 2026-10-25
 

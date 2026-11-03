@@ -1,5 +1,8 @@
 .claude/
 
+# Python helper bytecode
+__pycache__/
+
 # ralphex progress logs
 .ralphex/progress/
 
