@@ -1,8 +1,31 @@
 # Changelog
 
-This repo ships independent Claude Code plugins and Codex adaptations. Claude Code version headings use values from `plugins/<name>/.claude-plugin/plugin.json`; Codex headings use `codex_plugins/<name>/plugin.json`. They are not git tags.
+This repo ships independent Claude Code plugins, Codex adaptations and OpenCode adaptations. Claude Code version headings use values from `plugins/<name>/.claude-plugin/plugin.json`; Codex and OpenCode headings use their respective `codex_plugins/<name>/plugin.json` and `opencode_plugins/<name>/plugin.json`. They are not git tags.
 
 Entries are sorted by plugin version date, newest first.
+
+## planning (OpenCode) v0.1.0 - 2026-11-04
+
+### New Features
+
+- Adapt the Claude Code planning plugin v3.12.0 directly for OpenCode 2.2.5+, preserving make, the complete plan template, thirteen-step exec, sequential task children, four review phases and optional finalization.
+- Retain the original script/resource layout and Codex external reviewer by default; adapt tool calls, parallel review fanout, explicit settings, OpenCode overrides, worktree session relocation and available metrics.
+- Add a collision-safe installer for native skills, namespaced command wrappers and plan-review agents, without changing user preferences or permissions.
+- Preserve explicit revdiff/editor review in make; document the absence of a compatible ExitPlanMode hook.
+- Add fixture-based configuration, installation, override, external-review and Git lifecycle tests, plus an optional native OpenCode discovery check.
+
+### Improvements
+
+- Keep the port's wording close to the Claude source: restore the original skill, command and agent descriptions, and reduce rewrites in shared references to the substitutions OpenCode actually requires.
+- Install the bundle as a copied directory under `skills/planning/` instead of individual symlinks. Re-running the installer overwrites the managed copy and generated commands/agents, and the skills resolve shared files from their real copied base directory.
+- Hardcode plans to `docs/plans/` and drop the `plans_dir` setting; a configured value is now rejected as an unknown setting.
+- Keep make as a command only, matching the Claude source, and remove the redundant `planning-make` skill; exec remains a skill with a thin command wrapper.
+
+### Bug Fixes
+
+- Launch the review fanout as parallel `subagent` calls from one assistant step. `execute` Code Mode does not expose `subagent`, so the previous instruction could fail or serialize the five reviewers.
+- Name the shell tool's actual `workdir` and `timeout` parameters instead of the nonexistent `shell.workdir` and `shell.timeout` fields.
+- Let OpenCode reload configuration and use `/reload` instead of telling users to restart, and install agents only through the installer so their IDs keep the `planning-` prefix.
 
 ## planning v3.12.0 - 2026-11-03
 

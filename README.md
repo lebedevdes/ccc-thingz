@@ -4,6 +4,52 @@ Things to make [Claude Code](https://claude.ai/code) even better — hooks, skil
 
 This is an unapologetically opinionated set. Every skill here is something I actually use — some multiple times a day (brainstorm, plan, review), others less often but worth having in the toolbox. There are plenty of plugin collections out there, from random grab-bags to well-organized catalogs. This one is mine, and it reflects how I work. Even if you don't need my particular toolbox, it might give you ideas for building your own and making Claude Code do what you want it to do.
 
+## OpenCode
+
+The planning adaptation in `opencode_plugins/planning/` targets **OpenCode 2.2.5+**
+and is based directly on the Claude Code planning plugin v3.12.0. It preserves
+`/planning:make`, `/planning:exec`, the plan template, sequential fresh-context
+task execution, four review phases, Codex external review by default, worktree
+isolation, and optional finalization.
+
+Install the planning command, exec skill and plan-review agents globally:
+
+```bash
+python3 opencode_plugins/planning/scripts/install.py
+```
+
+Or install into one project:
+
+```bash
+python3 opencode_plugins/planning/scripts/install.py --project /path/to/project
+```
+
+Then start OpenCode in the project and run:
+
+```text
+/planning:make add caching to the API
+/planning:exec docs/plans/20261104-api-cache.md
+```
+
+The installer copies the entire bundle to `skills/planning/` and writes the two
+command wrappers and two plan-review agents. Re-run it after upgrading to refresh
+the managed copy and generated files; it overwrites only entries it owns and
+refuses unrelated files. It does not edit OpenCode permissions, provider
+credentials or preferences. Use `--dry-run` to preview.
+
+Settings use `.opencode/planning.json` over user-level
+`~/.config/opencode/planning.json`, with `OPENCODE_CONFIG_DIR` and `XDG_CONFIG_HOME`
+support. The original settings minus `plans_dir` remain (six total);
+`subagent_model` uses OpenCode's `provider/model` format. Plans always live in
+`docs/plans/`. Rules and prompt overrides use OpenCode paths. The original
+`ExitPlanMode` hook is not installed; make retains explicit revdiff/editor
+annotation review. Missing session metrics are reported as `n/a`.
+
+See the [OpenCode planning usage guide](opencode_plugins/planning/references/usage.md)
+and [configuration reference](opencode_plugins/planning/references/configuration.md).
+Run `bash tests/test-opencode-planning.sh` for temporary-fixture checks without
+model calls or changes to personal configuration.
+
 ## Codex
 
 Codex adaptations live in `codex_plugins/`, with a separate marketplace at
