@@ -47,6 +47,7 @@ jobs:
 
       - name: Run python tests
         run: |
+          python3 tests/test-question-environment.py
           python3 plugins/planning/scripts/plan-annotate.py --test
           python3 plugins/review/skills/git-review/scripts/git-review.py --test
           python3 .github/scripts/check-frontmatter.py --test

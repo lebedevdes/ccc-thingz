@@ -15,6 +15,8 @@ The planning plugin has two skills: planning-make (plan creation) and planning-e
 4. **Step 2** — creates plan file at `docs/plans/yyyymmdd-<task-name>.md`
 5. **Step 3** — offers next steps: interactive review, auto review (plan-review agent or external reviewer), implement, or done
 
+After creating the plan, the next-step choice is explicit unless the user already specified the action or requested a plan only. After either review, the same four choices are offered again, including the option to repeat a review or choose another reviewer. When a client cannot display all four options in its question widget, the skill presents a numbered question in conversation and waits for the answer. Creating or approving a plan alone does not authorize a commit or implementation.
+
 ### Examples
 ```
 $planning-make add user authentication
@@ -118,4 +120,4 @@ After creating a plan, make offers interactive review via:
 
 Both loop until the user quits without annotations.
 
-Questions follow the shared Questions in Codex rule in both skills: prefer supported blocking input, wait for async answers, or ask in conversation and end the turn.
+Questions follow the Questions in Codex rule in both skills. Run the bundled `scripts/question-environment.sh` in the skill directory to inspect the environment. For every single-choice question, use `agtermctl pick` first when the script reports a candidate, using the reported window and socket. If a sandbox restriction or likely sandbox-related socket error prevents the picker from opening, request elevated permissions and retry before falling back, subject to client permission policy. Use a supported client input form or a numbered question in conversation only when the picker is unavailable or fails after the applicable retry. The script cannot detect client-provided tools. Wait for the user's actual answer; cancellation is not an answer.

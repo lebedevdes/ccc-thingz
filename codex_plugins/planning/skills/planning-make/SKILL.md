@@ -15,7 +15,15 @@ Run `python3 PLUGIN_ROOT/scripts/planning_config.py` to load settings. These set
 
 ## Questions in Codex
 
-Ask one question at a time and wait for the user's answer before continuing with any step that depends on it. Prefer a blocking user-input tool supported by the current client and mode. If only an asynchronous question tool is available, pause the workflow until the answer arrives; the tool returning is not an answer. If no suitable tool is available, ask in ordinary conversation and end the turn. Do not switch to Plan mode just to ask questions.
+Ask one question at a time and wait for the user's answer before continuing with any step that depends on it. Respect higher-priority client instructions and use the first suitable method below:
+
+Before selecting a question method, run `sh <skill-directory>/scripts/question-environment.sh` (resolve `<skill-directory>` to the directory containing this SKILL.md). Read its JSON output. The script cannot detect client-provided tools: check the tools actually exposed in the current client and mode. Use the reported environment IDs to address the current session and window. A failed connection is specific to the execution context; do not bypass its restrictions.
+
+1. **For every single-choice question, use `agtermctl pick` first when the script reports a candidate.** This is required, not merely a preference: do not choose a client question tool or ordinary conversation just because it is easier or already available. Pass the reported socket and window explicitly; consult the agterm skill or `agtermctl pick open --help` for syntax. Supply every option, allow a custom answer when appropriate, and wait for the actual result. If the picker fails because of a sandbox restriction or a likely sandbox-related socket access error, retry the same picker using the shell tool's elevated-permission request, with a clear justification, before falling back. Follow the client permission policy; do not bypass restrictions or retry after approval is denied. Use the next method only if the picker is unavailable, escalation is unavailable or denied, or the picker fails after the applicable retry. A cancellation is not a choice; do not treat it as an answer. Do not target an unrelated window.
+2. Use a user-input form supported by the current client and mode that can represent the question and all its choices. Prefer blocking input; if asynchronous, wait for the actual answer, not merely the tool's return.
+3. Ask in ordinary conversation, presenting numbered choices where applicable, and end the turn to wait for an answer.
+
+Do not switch to Plan mode just to ask questions.
 
 Reuse decisions and authorization already supplied; ask only about unresolved choices. Do not assume Codex can switch its own collaboration mode.
 
@@ -298,12 +306,16 @@ Example (NOTICE: Files block + tests as separate checklist items):
 
 after creating the file, tell user: "created plan: `docs/plans/yyyymmdd-<task-name>.md`"
 
-then ask "Plan created. What's next?" following Questions in Codex, unless the next step is already specified. Offer:
+**Mandatory next-step choice:** immediately after creating the plan, ask "Plan created. What's next?" following Questions in Codex and present all four choices below. Do not end with only a link to the plan, silently choose an option, start a review or implementation, or commit the plan before the user chooses. A request to create a plan, approval of its contents, or an earlier choice of approach is not a choice of what to do next.
+
+Skip this choice only when the user has already explicitly specified the next action for this plan (for example, "create the plan and then execute it" or "create and commit the plan, then stop"). Follow that instruction without asking again. A plan-only request means stop after creating the plan; do not infer permission to commit.
 
 - **Interactive review** — open plan in editor for manual annotation and feedback loop
 - **Auto review** — automated analysis by the plan-review agent or the external OpenCode reviewer
 - **Implement** — commit plan and start implementing
 - **Done** — commit plan, no further action
+
+Use the first suitable method in Questions in Codex. If a form's option limit cannot accommodate all four choices, present all four in a numbered ordinary-conversation question instead of dropping or merging options; end the turn and wait for the answer. An answer can be a number, label, or free text. After a review, present the same four choices and wait again; do not interpret completion of a review as authorization to implement or commit. Follow an explicitly specified subsequent action without asking again.
 
 - **Interactive review**: read [../../references/interactive-review.md](../../references/interactive-review.md) for Codex launch/permission handling, then check if `revdiff` is installed (`which revdiff`).
   - **if revdiff is available**: run `PLUGIN_ROOT/scripts/launch-plan-review.sh <plan-file-path>` via Bash.
@@ -325,7 +337,7 @@ then ask "Plan created. What's next?" following Questions in Codex, unless the n
     2. revise the plan file to address each annotation
     3. run `PLUGIN_ROOT/scripts/plan-annotate.py <plan-file-path>` via Bash
     4. repeat until no diff output (user closed editor without changes)
-  when the annotation loop completes, ask again with the remaining options (minus "Interactive review")
+  when the annotation loop completes, return to the same four-choice question, including both review options, unless the user already explicitly specified what to do next.
 - **Auto review**: ask which reviewer to use following Questions in Codex:
   - **Plan-review agent** — Codex agent checks problem definition, over-engineering, testing and conventions.
   - **External reviewer** — send the plan to OpenCode using the configured provider/model.
@@ -336,7 +348,7 @@ then ask "Plan created. What's next?" following Questions in Codex, unless the n
     - no issues found: tell the user.
     - findings: show each finding with your own assessment. The reviewer did not see this conversation, so a finding may already be settled by what the user decided, or be noise. Ask which findings to apply following Questions in Codex. Offer every finding; if the client's question widget cannot represent the full selection, ask successive questions or use numbered conversation. Revise the plan file for the selected findings.
 
-  After review completes, ask again with the same options (minus "Auto review"). When the external review was skipped or failed, keep "Auto review": no review happened, and the plan-review agent needs no external tool.
+  After either reviewer finishes, show the outcome and handle any selected findings, then return to the same four-choice question, including "Auto review" so the user can review again or choose the other reviewer. Do this whether the review is clean, has findings, is skipped, or fails; report skipped or failed reviews as such. Wait for the answer before continuing, unless the user already explicitly specified the subsequent action.
 - **Implement**: commit plan with `scripts/stage-and-commit.sh`, using a message like "docs: add <topic> implementation plan" and listing only the selected plan path, then ask implementation mode following Questions in Codex unless already specified:
   - **Interactive** — implement task by task in this session. Track progress using an available planning/task tool or the plan checkboxes; mark completed items immediately (do not batch).
   - **Autonomous** — load `$planning-exec <plan-file-path>` for autonomous execution with reviews. Pass the plan and agreed context.

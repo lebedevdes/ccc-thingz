@@ -9,7 +9,15 @@ Objective analysis of a statement by running two agents with opposing goals in p
 
 ## Questions in Codex
 
-Ask one question at a time and wait for the user's answer before continuing with any step that depends on it. Prefer a blocking user-input tool supported by the current client and mode. If only an asynchronous question tool is available, pause the workflow until the answer arrives; the tool returning is not an answer. If no suitable tool is available, ask in ordinary conversation and end the turn. Do not switch to Plan mode just to ask questions.
+Ask one question at a time and wait for the user's answer before continuing with any step that depends on it. Respect higher-priority client instructions and use the first suitable method below:
+
+Before selecting a question method, run `sh <skill-directory>/scripts/question-environment.sh` (resolve `<skill-directory>` to the directory containing this SKILL.md). Read its JSON output. The script cannot detect client-provided tools: check the tools actually exposed in the current client and mode. Use the reported environment IDs to address the current session and window. A failed connection is specific to the execution context; do not bypass its restrictions.
+
+1. **For every single-choice question, use `agtermctl pick` first when the script reports a candidate.** This is required, not merely a preference: do not choose a client question tool or ordinary conversation just because it is easier or already available. Pass the reported socket and window explicitly; consult the agterm skill or `agtermctl pick open --help` for syntax. Supply every option, allow a custom answer when appropriate, and wait for the actual result. If the picker fails because of a sandbox restriction or a likely sandbox-related socket access error, retry the same picker using the shell tool's elevated-permission request, with a clear justification, before falling back. Follow the client permission policy; do not bypass restrictions or retry after approval is denied. Use the next method only if the picker is unavailable, escalation is unavailable or denied, or the picker fails after the applicable retry. A cancellation is not a choice; do not treat it as an answer. Do not target an unrelated window.
+2. Use a user-input form supported by the current client and mode that can represent the question and all its choices. Prefer blocking input; if asynchronous, wait for the actual answer, not merely the tool's return.
+3. Ask in ordinary conversation, presenting numbered choices where applicable, and end the turn to wait for an answer.
+
+Do not switch to Plan mode just to ask questions.
 
 Reuse decisions and authorization already supplied; ask only about unresolved choices.
 
