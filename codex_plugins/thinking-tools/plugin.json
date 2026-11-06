@@ -1,0 +1,18 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "thinking-tools",
+  "version": "0.1.0",
+  "description": "Evidence-based analysis in Codex: opposing hypotheses, root-cause investigation, and an OpenCode second opinion.",
+  "author": {"name": "Umputun"},
+  "repository": "https://github.com/lebedevdes/ccc-thingz",
+  "license": "MIT",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Thinking Tools",
+        "shortDescription": "Test claims, investigate causes, and ask OpenCode",
+        "category": "Productivity"
+      }
+    }
+  }
+}

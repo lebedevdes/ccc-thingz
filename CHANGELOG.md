@@ -1,14 +1,75 @@
 # Changelog
 
-This repo ships independent Claude Code plugins. Version headings use values from `plugins/<name>/.claude-plugin/plugin.json`; they are not git tags.
+This repo ships independent Claude Code plugins, Codex adaptations and OpenCode adaptations. Claude Code version headings use values from `plugins/<name>/.claude-plugin/plugin.json`; Codex and OpenCode headings use their respective `codex_plugins/<name>/plugin.json` and `opencode_plugins/<name>/plugin.json`. They are not git tags.
 
 Entries are sorted by plugin version date, newest first.
+
+## planning (OpenCode) v0.1.0 - 2026-11-04
+
+### New Features
+
+- Adapt the Claude Code planning plugin v3.12.0 directly for OpenCode 2.2.5+, preserving make, the complete plan template, thirteen-step exec, sequential task children, four review phases and optional finalization.
+- Retain the original script/resource layout and Codex external reviewer by default; adapt tool calls, parallel review fanout, explicit settings, OpenCode overrides, worktree session relocation and available metrics.
+- Add a collision-safe installer for native skills, namespaced command wrappers and plan-review agents, without changing user preferences or permissions.
+- Preserve explicit revdiff/editor review in make; document the absence of a compatible ExitPlanMode hook.
+- Add fixture-based configuration, installation, override, external-review and Git lifecycle tests, plus an optional native OpenCode discovery check.
+
+### Improvements
+
+- Keep the port's wording close to the Claude source: restore the original skill, command and agent descriptions, and reduce rewrites in shared references to the substitutions OpenCode actually requires.
+- Install the bundle as a copied directory under `skills/planning/` instead of individual symlinks. Re-running the installer overwrites the managed copy and generated commands/agents, and the skills resolve shared files from their real copied base directory.
+- Hardcode plans to `docs/plans/` and drop the `plans_dir` setting; a configured value is now rejected as an unknown setting.
+- Keep make as a command only, matching the Claude source, and remove the redundant `planning-make` skill; exec remains a skill with a thin command wrapper.
+
+### Bug Fixes
+
+- Launch the review fanout as parallel `subagent` calls from one assistant step. `execute` Code Mode does not expose `subagent`, so the previous instruction could fail or serialize the five reviewers.
+- Name the shell tool's actual `workdir` and `timeout` parameters instead of the nonexistent `shell.workdir` and `shell.timeout` fields.
+- Let OpenCode reload configuration and use `/reload` instead of telling users to restart, and install agents only through the installer so their IDs keep the `planning-` prefix.
 
 ## planning v3.12.0 - 2026-11-03
 
 ### New Features
 
 - exec: new `subagent_model` setting picks the model for every exec subagent: task agents, the review fanout, fixers, smells, finalize and stats. Valid values are `opus`, `sonnet`, `haiku` and `fable`. This lets the orchestrator run on one model and the subagents on another, so an exec started from a Fable session no longer spends Fable quota on subagent work. Left empty, subagents get Claude Code's default subagent model, as before. The external review in step 9 runs through `run-external-review.sh` and is not affected
+
+## thinking-tools (Codex) v0.1.0 - 2026-11-03
+
+### New Features
+
+- Add `dialectic` and `root-cause-investigator` with Codex-compatible opposing analysis roles and evidence-based root-cause investigation.
+- Adapt `ask-codex` into `ask-opencode` for read-only advice and structured adversarial code review.
+- Reuse planning's provider/model settings and DeepSeek V4.1 Flash defaults through a bundled configuration reader and transport, without requiring planning to be installed.
+- Include context/diff snapshots, validated JSON review findings, explicit consultation failures/timeouts, and fixture-based CI checks.
+
+## workflow (Codex) v0.1.0 - 2026-11-03
+
+### New Features
+
+- Add Codex adaptations of `learn`, `clarify`, `wrong`, `md-copy`, `txt-copy`, and `backlog`.
+- Capture reusable project knowledge through existing placement conventions and `AGENTS.md`, accounting for active overrides and personal/local notes.
+- Adapt questions and planning handoffs to available Codex tools, preserving session decisions and prior authorization.
+- Preserve the Git backlog format/lifecycle and add a clipboard helper with literal UTF-8 copying, backend selection, and explicit failure reporting.
+- Add fixture-based clipboard checks to the shell-test CI job without touching the real clipboard.
+
+## planning (Codex) v0.1.0 - 2026-11-03
+
+### New Features
+
+- Add `planning-make` and `planning-exec` for implementation planning, sequential execution, worktree isolation, progress tracking, multi-phase Codex reviews, and optional finalization.
+- Support optional `subagent_model` selection for all native `planning-exec` subagents, preserving client defaults when unset and keeping OpenCode reviewer model settings independent.
+- Use OpenCode for external plan and code reviews, with independently configurable provider and model. Default to DeepSeek V4.1 Flash (`deepseek/deepseek-flash`).
+- Load settings from user/project `planning.json`, support environment overrides for reviewer provider/model, and load custom rules and prompt overrides from Codex paths.
+- Bundle explicit revdiff/editor annotation tools, VCS-aware scoped commit helpers, and a JSON review runner that distinguishes clean results, findings, skipped tools, failures, and timeouts.
+- Add fixture-based CI checks and verify a live external plan review with OpenCode 2.2.5 and DeepSeek V4.1 Flash.
+
+## brainstorm (Codex) v0.1.0 - 2026-11-03
+
+### New Features
+
+- Add the first Codex adaptation under `codex_plugins/brainstorm` and a separate `ccc-thingz-codex` marketplace at `.agents/plugins/marketplace.json`.
+- Preserve collaborative design phases with Codex-compatible questions, self-contained planning, and project/user rules under `.codex` or `CODEX_HOME`.
+- Bundle rules resolution and its reference inside the skill for both plugin and manual installation.
 
 ## planning v3.11.0 - 2026-10-25
 

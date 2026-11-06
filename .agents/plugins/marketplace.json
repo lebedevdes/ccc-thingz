@@ -1,0 +1,56 @@
+{
+  "name": "ccc-thingz-codex",
+  "interface": {
+    "displayName": "Thingz for Codex"
+  },
+  "plugins": [
+    {
+      "name": "brainstorm",
+      "source": {
+        "source": "local",
+        "path": "./codex_plugins/brainstorm"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "planning",
+      "source": {
+        "source": "local",
+        "path": "./codex_plugins/planning"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "workflow",
+      "source": {
+        "source": "local",
+        "path": "./codex_plugins/workflow"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "thinking-tools",
+      "source": {
+        "source": "local",
+        "path": "./codex_plugins/thinking-tools"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

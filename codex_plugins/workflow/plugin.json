@@ -1,0 +1,18 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "workflow",
+  "version": "0.1.0",
+  "description": "Codex session helpers: capture project knowledge, clarify behavior, reconsider an approach, copy text, and manage deferred work.",
+  "author": {"name": "Umputun"},
+  "repository": "https://github.com/lebedevdes/ccc-thingz",
+  "license": "MIT",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Workflow",
+        "shortDescription": "Session helpers, project knowledge, and deferred work",
+        "category": "Productivity"
+      }
+    }
+  }
+}

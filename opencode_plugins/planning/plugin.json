@@ -1,0 +1,9 @@
+{
+  "name": "planning",
+  "version": "0.1.0",
+  "description": "OpenCode 2 adaptation of the Claude Code planning plugin",
+  "source": "plugins/planning",
+  "source_version": "3.12.0",
+  "minimum_opencode_version": "2.2.5",
+  "license": "MIT"
+}
